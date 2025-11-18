@@ -9,7 +9,7 @@ We are designing a prototype for a secure, in-house chatbot system with the focu
 
 ### Requirements:
 
-- Compliance with GDPR, HIPAA, SOC2, etc.
+- Compliance with HIPAA, FERPA, etc.
 - Protection for Intellectual Property
 - Run on internal, in-house infrastructure 
 - Provide articulate and helpful responses based on approved knowledge
