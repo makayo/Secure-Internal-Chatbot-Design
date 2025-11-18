@@ -30,3 +30,13 @@ We are designing a prototype for a secure, in-house chatbot system with the focu
     - Ollama (Llama 3 or Mistral)
 5. Authentication
     - OAuth 2.0 (Secure token-based auth) 
+
+## Setup & Installation
+
+Pre-reqs:
+- Python 3.13+
+- Node.js 18+
+- PostgreSQL 14+
+- Ollama (latest build)
+- Clone the repo:
+'repo link here'
