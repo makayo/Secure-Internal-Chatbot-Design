@@ -25,11 +25,19 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <nav className="flex items-center justify-between"></nav>
+        <nav className="flex items-center justify-between">
+          <div />
+          <a
+            href="/login"
+            className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-full border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-200"
+          >
+            Sign In
+          </a>
+        </nav>
       </header>
 
       {/* Hero Section */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 sm:pt-8 sm:pb-16 lg:pt-10 lg:pb-20">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Heading */}
           <img
@@ -79,12 +87,6 @@ export default function Home() {
                 />
               </svg>
             </a>
-            <a
-              href="/login"
-              className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-full border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-all duration-200"
-            >
-              Sign In
-            </a>
           </div>
 
           {/* Chat Preview Mockup */}
@@ -125,7 +127,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-tl-sm px-4 py-3">
                       <p className="text-gray-800 dark:text-gray-200">
-                        Hello! I'm here to help you find opportunities and
+                        Hello! I&apos;m here to help you find opportunities and
                         resources. What can I assist you with today?
                       </p>
                     </div>
@@ -139,7 +141,7 @@ export default function Home() {
                 <div className="flex gap-3 justify-end">
                   <div className="flex-1 max-w-[80%]">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 ml-auto">
-                      <p>I'm looking for career development opportunities</p>
+                      <p>I&apos;m looking for career development opportunities</p>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-2 text-right">
                       Just now
