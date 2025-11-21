@@ -25,72 +25,57 @@ We are designing a prototype for a secure, in-house chatbot system with the focu
 2. Backend
     - Python
     - FastAPI
-3. Database
-    - PostgreSQL
-    - Vectors: pgvector/ChromaDB (RAG)
-4. LLM
-    - Ollama (Llama 3.1 8B)
-5. Authentication
-    - OAuth 2.0 (Secure token-based auth) 
+3. LLM
+    - Hugging Face (TinyLlama-1.1B-Chat)
+4. Authentication
+    - Basic token support (WIP)
 
 ## Setup & Installation
 
-Pre-reqs:
-- Python 3.13+
-- Node.js 18+
-- PostgreSQL 14+
-- Ollama (3.1 8B)
-- Git, GitBash
-- Clone the repo:
-```git clone https://github.com/OC-Chatbot/Secure-Internal-Chatbot-Design.git```
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ (with npm)
+- Git
 
-Setup:
-1. Clone repository
-```git clone https://github.com/OC-Chatbot/Secure-Internal-Chatbot-Design.git```
-2. Install Ollama ([here](https://ollama.com/download/windows))
-3. Restart Git Bash, verify right version of model:<br/>
-```ollama --version```<br/>
-```ollama pull llama3.1```<br/>
-```ollama serve``` 
-4. Start Ollama Server
-```ollama serve```
-5. Verify Model Installation
-```ollama run llama3.1 "Are you ready to work, llama?"```
-6. Setup PostgreSQL Database ([download here](https://www.postgresql.org/download/windows))
-7. Create the database and the user
-8. Setup backend (Python/FastAPI)<br/>
-```cd backend```<br/>
-Either using Anaconda Navigator to open virtual environment use GitBash:<br/>
-```python -m venv venv```<br/>
-```venv\Scripts\activate```<br/>
-Add dependencies:<br/>
-```pip install -r requirements.txt```<br/>
-Configure env variables and .env, generate SECURE KEY and update file.<br/>
-Database migrations:<br/>
-```alembic upgrade head```<br/>
-Start backend server:<br/>
-```uvicorn app.main:app --reload --host 0.0.0.0 --port 8000```<br/>
-API Base hosted:<br/>
-http://localhost:8000<br/>
-Interactive Docs:<br/>
-http://localhost:8000/docs<br/>
-9. Setup frontend (Next.js/TypeScript)<br/>
-```cd frontend```<br/>
-```npm install```<br/>
-Configure env variables and edit .env.local<br/>
-```cp .env.example .env.local```<br/>
-```NEXT_PUBLIC_API_URL=http://localhost:8000```<br/>
-Start development server:
-```npm run dev```
-10. Run Application
-Open four terminals:
-    - Terminal #1: Ollama ```ollama serve```<br/>
-    - Terminal #2: PostgreSQL (if not running as a service): ```net start postgresql-x64-14```<br/>
-    - Terminal #3: ```cd backend```, ```venv\Scripts\activate```, ```uvicorn app.main:app --reload --port 8000```<br/>
-    - Terminal #4: ```cd frontend```, ```npm run dev```
-11. Access Application<br/>
-Open http://localhost:3000 in browser, log in with demo credentials (if set up to seed)<br/>
+### 1) Clone the repo
+```bash
+git clone https://github.com/OC-Chatbot/Secure-Internal-Chatbot-Design.git
+cd Secure-Internal-Chatbot-Design
+```
 
-Start Chatting!<br/>
+### 2) Backend setup (FastAPI)
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+pip install -r backend/requirements.txt
+```
 
-Future Docker Setup to come to containerize the deployment via Docker Compose. 
+### 3) Frontend setup (Next.js)
+```bash
+npm install
+```
+
+### 4) Run both services
+Recommended (single command):
+```bash
+python start_services.py
+```
+This starts `uvicorn backend.main:app` on port 8000 and `next dev` on port 3000. It also sets `NEXT_PUBLIC_API_URL` to `http://localhost:8000/api` if unset.
+
+Manual alternative:
+```bash
+# Terminal 1
+source .venv/bin/activate
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2
+npm run dev -- --port 3000
+```
+
+### 5) Access the app
+- Frontend: http://localhost:3000 (chat UI at `/chat`)
+- Backend docs: http://localhost:8000/docs
+
+### Notes
+- The backend loads the TinyLlama model from Hugging Face; first run requires network access or a pre-cached model in your HF cache.
+- Configure `NEXT_PUBLIC_API_URL` if your backend runs on a different host/port. You can export it before `npm run dev` or set it in `.env.local`.
