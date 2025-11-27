@@ -219,6 +219,14 @@ def get_conversation(conversation_id: str, request: Request):
         conversationId=conversation_id,
     )
 
+@app.get("/api/admin/settings")
+def get_admin_settings():
+    return {"message": "Admin settings placeholder"}
+
+@app.post("/api/admin/test")
+def admin_test():
+    return {"message": "Admin test successful"}
+
 
 @app.post("/api/chat/message", response_model=SendMessageResponse)
 def chat_with_llm(req: SendMessageRequest, request: Request):
