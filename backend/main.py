@@ -1,4 +1,6 @@
+### Complete revised backend/main.py
 
+#--- python ---
 from __future__ import annotations
 
 from datetime import datetime
@@ -11,16 +13,13 @@ from pydantic import BaseModel
 
 from backend.llm_model import generate_text
 
-from fastapi import FastAPI
+# --- App setup ---
+app = FastAPI(title="Opportunity Center Chat Backend", version="1.0.0")
 
-app = FastAPI()
-
+# Health check
 @app.get("/__health")
 def health():
     return {"status": "ok"}
-
-
-app = FastAPI(title="Opportunity Center Chat Backend", version="1.0.0")
 
 # Configure CORS
 app.add_middleware(
@@ -31,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Models ---
 class ChatMessage(BaseModel):
     id: str
     content: str
@@ -38,16 +38,13 @@ class ChatMessage(BaseModel):
     timestamp: str
     conversationId: str
 
-
 class SendMessageRequest(BaseModel):
     message: str
     conversationId: Optional[str] = None
 
-
 class SendMessageResponse(BaseModel):
     message: ChatMessage
     conversationId: str
-
 
 class ConversationSummary(BaseModel):
     id: str
@@ -56,38 +53,29 @@ class ConversationSummary(BaseModel):
     updatedAt: str
     messageCount: int
 
-
 class ChatHistoryResponse(BaseModel):
     messages: List[ChatMessage]
     conversationId: str
 
-# --- Data ---
-
+# --- Data stores ---
 conversation_messages: dict[str, dict[str, list[ChatMessage]]] = {}
 conversation_metadata: dict[str, dict[str, dict[str, datetime | str]]] = {}
 
-
+# --- Helpers ---
 def _get_user_id(request: Request) -> str:
-    user_id = request.headers.get("x-user-id")
-    # Default to "admin" if header is missing
-    return user_id or "admin"
-
-
+    return request.headers.get("x-user-id") or "admin"
 
 def _get_user_message_store(user_id: str) -> dict[str, list[ChatMessage]]:
     return conversation_messages.setdefault(user_id, {})
 
-
 def _get_user_metadata_store(user_id: str) -> dict[str, dict[str, datetime | str]]:
     return conversation_metadata.setdefault(user_id, {})
-
 
 def _derive_title(text: str) -> str:
     cleaned = text.strip()
     if not cleaned:
         return "New Conversation"
     return cleaned[:60] + ("..." if len(cleaned) > 60 else "")
-
 
 def _create_conversation(user_id: str, first_user_message: str) -> str:
     user_meta = _get_user_metadata_store(user_id)
@@ -102,19 +90,13 @@ def _create_conversation(user_id: str, first_user_message: str) -> str:
     user_messages[conv_id] = []
     return conv_id
 
-
-def _ensure_conversation(
-    user_id: str, conversation_id: Optional[str], user_message: str
-) -> str:
+def _ensure_conversation(user_id: str, conversation_id: Optional[str], user_message: str) -> str:
     user_meta = _get_user_metadata_store(user_id)
     if conversation_id and conversation_id in user_meta:
         return conversation_id
     return _create_conversation(user_id, user_message)
 
-
-def _store_message(
-    user_id: str, conversation_id: str, role: Literal["user", "assistant"], content: str
-) -> ChatMessage:
+def _store_message(user_id: str, conversation_id: str, role: Literal["user", "assistant"], content: str) -> ChatMessage:
     user_messages = _get_user_message_store(user_id)
     user_meta = _get_user_metadata_store(user_id)
 
@@ -137,25 +119,11 @@ def _store_message(
 
     return message
 
-
 def _build_prompt(user_id: str, conversation_id: str) -> str:
     history = _get_user_message_store(user_id).get(conversation_id, [])
     recent_history = history[-10:]
-
-    latest_user = next(
-        (msg for msg in reversed(recent_history) if msg.role == "user"), None
-    )
-
-    history_lines = []
-    for msg in recent_history:
-        role = "User" if msg.role == "user" else "Assistant"
-        history_lines.append(f"{role}: {msg.content}")
-    history_block = "\n".join(history_lines)
-
-    if not latest_user:
-        latest_content = ""
-    else:
-        latest_content = latest_user.content
+    latest_user = next((msg for msg in reversed(recent_history) if msg.role == "user"), None)
+    latest_content = latest_user.content if latest_user else ""
 
     system = (
         "You are a helpful assistant for the Opportunity Center. "
@@ -164,6 +132,9 @@ def _build_prompt(user_id: str, conversation_id: str) -> str:
         "Keep replies under 80 words."
     )
 
+    history_lines = [f"{'User' if msg.role == 'user' else 'Assistant'}: {msg.content}" for msg in recent_history]
+    history_block = "\n".join(history_lines)
+
     return (
         f"{system}\n\n"
         f"Recent conversation:\n{history_block}\n\n"
@@ -171,7 +142,6 @@ def _build_prompt(user_id: str, conversation_id: str) -> str:
         f"Latest question: {latest_content}\n"
         f"Answer:"
     )
-
 
 def _conversation_summary(user_id: str, conversation_id: str) -> ConversationSummary:
     user_meta = _get_user_metadata_store(user_id)
@@ -199,81 +169,25 @@ def _conversation_summary(user_id: str, conversation_id: str) -> ConversationSum
     )
 
 # --- Endpoints ---
-
 @app.get("/")
 async def root():
     return {"message": "Opportunity Center Chat API", "status": "ok"}
-
 
 @app.get("/api/chat/conversations", response_model=List[ConversationSummary])
 def list_conversations(request: Request):
     user_id = _get_user_id(request)
     user_meta = _get_user_metadata_store(user_id)
-
     summaries = [_conversation_summary(user_id, conv_id) for conv_id in user_meta]
     summaries.sort(key=lambda s: s.updatedAt, reverse=True)
     return summaries
-
 
 @app.get("/api/chat/conversations/{conversation_id}", response_model=ChatHistoryResponse)
 def get_conversation(conversation_id: str, request: Request):
     user_id = _get_user_id(request)
     user_messages = _get_user_message_store(user_id)
-
     if conversation_id not in user_messages:
         raise HTTPException(status_code=404, detail="Conversation not found.")
-
-    return ChatHistoryResponse(
-        messages=user_messages[conversation_id],
-        conversationId=conversation_id,
-    )
-
-@app.get("/api/admin/stats")
-def get_admin_stats(request: Request):
-    user_id = _get_user_id(request)
-    # aggregate across this user's data
-    user_meta = _get_user_metadata_store(user_id)
-    user_msgs = _get_user_message_store(user_id)
-
-    total_conversations = len(user_meta)
-    total_messages = sum(len(user_msgs.get(cid, [])) for cid in user_msgs)
-    active_users = 1 if total_conversations > 0 else 0
-
-    return {
-        "totalUsers": 1,
-        "totalConversations": total_conversations,
-        "totalMessages": total_messages,
-        "activeUsers": active_users,
-    }
-
-@app.get("/api/admin/users")
-def get_admin_users():
-    # simple in-memory listing; expand if you have a real user store
-    users = []
-    for user_id, metas in conversation_metadata.items():
-        users.append({
-            "id": user_id,
-            "name": user_id,
-            "email": f"{user_id}@example.com",
-            "role": "admin" if user_id == "admin" else "user",
-            "createdAt": next(iter(metas.values()))["created_at"].isoformat() if metas else datetime.utcnow().isoformat(),
-        })
-    return users
-
-@app.post("/api/admin/settings")
-def update_admin_settings(settings: dict):
-    # echo back for now; persist to a config store if you add one later
-    return settings
-
-
-@app.get("/api/admin/settings")
-def get_admin_settings():
-    return {"message": "Admin settings placeholder"}
-
-@app.post("/api/admin/test")
-def admin_test():
-    return {"message": "Admin test successful"}
-
+    return ChatHistoryResponse(messages=user_messages[conversation_id], conversationId=conversation_id)
 
 @app.post("/api/chat/message", response_model=SendMessageResponse)
 def chat_with_llm(req: SendMessageRequest, request: Request):
@@ -283,8 +197,6 @@ def chat_with_llm(req: SendMessageRequest, request: Request):
         raise HTTPException(status_code=400, detail="Message must not be empty.")
 
     conversation_id = _ensure_conversation(user_id, req.conversationId, message_text)
-
-    # Add the user message to history before calling the model
     _store_message(user_id, conversation_id, "user", message_text)
 
     prompt = _build_prompt(user_id, conversation_id)
@@ -305,41 +217,75 @@ def chat_with_llm(req: SendMessageRequest, request: Request):
         raise HTTPException(status_code=500, detail="LLM generation failed.")
 
     assistant_message = _store_message(user_id, conversation_id, "assistant", reply_text)
-
-    return SendMessageResponse(
-        message=assistant_message,
-        conversationId=conversation_id,
-    )
-
+    return SendMessageResponse(message=assistant_message, conversationId=conversation_id)
 
 @app.delete("/api/chat/conversations/{conversation_id}")
 def delete_conversation(conversation_id: str, request: Request):
     user_id = _get_user_id(request)
     user_meta = _get_user_metadata_store(user_id)
-
     if conversation_id not in user_meta:
         raise HTTPException(status_code=404, detail="Conversation not found.")
-
     _get_user_message_store(user_id).pop(conversation_id, None)
     user_meta.pop(conversation_id, None)
     return {"message": "Conversation deleted."}
-
 
 @app.delete("/api/chat/conversations/{conversation_id}/messages")
 def clear_conversation_messages(conversation_id: str, request: Request):
     user_id = _get_user_id(request)
     user_meta = _get_user_metadata_store(user_id)
     user_messages = _get_user_message_store(user_id)
-
     if conversation_id not in user_meta:
         raise HTTPException(status_code=404, detail="Conversation not found.")
-
     user_messages[conversation_id] = []
     user_meta[conversation_id]["updated_at"] = datetime.utcnow()
     return {"message": "Conversation messages cleared."}
 
+@app.get("/api/admin/stats")
+def get_admin_stats(request: Request):
+    user_id = _get_user_id(request)
+    user_meta = _get_user_metadata_store(user_id)
+    user_msgs = _get_user_message_store(user_id)
+    total_conversations = len(user_meta)
+    total_messages = sum(len(user_msgs.get(cid, [])) for cid in user_msgs)
+    active_users = 1 if total_conversations > 0 else 0
+    return {
+        "totalUsers": len(conversation_metadata),
+        "totalConversations": total_conversations,
+        "totalMessages": total_messages,
+        "activeUsers": active_users,
+    }
 
+@app.get("/api/admin/users")
+def get_admin_users():
+    users = []
+    for user_id, metas in conversation_metadata.items():
+        created_iso = (
+            next(iter(metas.values()))["created_at"].isoformat()
+            if metas
+            else datetime.utcnow().isoformat()
+        )
+        users.append({
+            "id": user_id,
+            "name": user_id,
+            "email": f"{user_id}@example.com",
+            "role": "admin" if user_id == "admin" else "user",
+            "createdAt": created_iso,
+        })
+    return users
 
+@app.post("/api/admin/settings")
+def update_admin_settings(settings: dict):
+    return settings
+
+@app.get("/api/admin/settings")
+def get_admin_settings():
+    return {"message": "Admin settings placeholder"}
+
+@app.post("/api/admin/test")
+def admin_test():
+    return {"message": "Admin test successful"}
+
+# --- Entrypoint ---
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
