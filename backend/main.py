@@ -273,17 +273,48 @@ def get_admin_users():
         })
     return users
 
-@app.post("/api/admin/settings")
-def update_admin_settings(settings: dict):
+# --- Admin Models ---
+class AdminSettings(BaseModel):
+    model: str
+    systemPrompt: str
+    temperature: float
+    maxTokens: int
+    retrievalDepth: int
+    rateLimit: int
+
+class TestRequest(BaseModel):
+    prompt: str
+    settings: AdminSettings
+
+class TestResponse(BaseModel):
+    output: str
+    settings_used: AdminSettings
+
+# --- Admin Endpoints ---
+@app.get("/api/admin/settings", response_model=AdminSettings)
+def get_admin_settings():
+    return AdminSettings(
+        model="gpt-4o-mini",
+        systemPrompt="You are an internal assistant. Answer concisely and follow safety policies.",
+        temperature=0.2,
+        maxTokens=1024,
+        retrievalDepth=5,
+        rateLimit=60,
+    )
+
+@app.post("/api/admin/settings", response_model=AdminSettings)
+def update_admin_settings(settings: AdminSettings):
     return settings
 
-@app.get("/api/admin/settings")
-def get_admin_settings():
-    return {"message": "Admin settings placeholder"}
+@app.post("/api/admin/test", response_model=TestResponse)
+def admin_test(req: TestRequest):
+    if not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt must not be empty.")
+    return {
+        "output": f"Echo: {req.prompt}",
+        "settings_used": req.settings,
+    }
 
-@app.post("/api/admin/test")
-def admin_test():
-    return {"message": "Admin test successful"}
 
 # --- Entrypoint ---
 if __name__ == "__main__":
