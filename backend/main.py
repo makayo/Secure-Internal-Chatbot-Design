@@ -11,6 +11,14 @@ from pydantic import BaseModel
 
 from backend.llm_model import generate_text
 
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/__health")
+def health():
+    return {"status": "ok"}
+
 
 app = FastAPI(title="Opportunity Center Chat Backend", version="1.0.0")
 
