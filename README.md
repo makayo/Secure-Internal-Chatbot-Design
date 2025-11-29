@@ -33,7 +33,7 @@ We are designing a prototype for a secure, in-house chatbot system with the focu
 ## Setup & Installation
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11
 - Node.js 18+ (with npm)
 - Git
 
@@ -45,7 +45,7 @@ cd Secure-Internal-Chatbot-Design
 
 ### 2) Backend setup (FastAPI)
 ```bash
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r backend/requirements.txt
 ```
@@ -58,7 +58,7 @@ npm install
 ### 4) Run both services
 Recommended (single command):
 ```bash
-python start_services.py
+./.venv/bin/python start_services.py
 ```
 This starts `uvicorn backend.main:app` on port 8000 and `next dev` on port 3000. It also sets `NEXT_PUBLIC_API_URL` to `http://localhost:8000/api` if unset.
 
