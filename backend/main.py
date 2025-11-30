@@ -1,6 +1,3 @@
-I revised backend/main.py and added inline comments explaining each feature area (app setup, CORS, models, stores, helpers, prompt building, endpoints, admin, and entrypoint). Paste the file below into your repo to replace the existing backend/main.py.
-
-```python name=backend/main.py url=https://github.com/makayo/Secure-Internal-Chatbot-Design/blob/8ee43e871607f38459f77eaa786ef0b5b3c07ad9/backend/main.py
 from __future__ import annotations
 
 # Standard libs
@@ -173,6 +170,25 @@ def _store_message(user_id: str, conversation_id: str, role: Literal["user", "as
     return message
 
 
+def strip_signature(text: str) -> str:
+    """
+    Remove common trailing sign-offs or 'Conclusion' blocks from model output.
+    Keeps and returns only the first meaningful part of the output.
+    """
+    import re
+
+    if not text:
+        return text
+
+    # Split on common closing phrases and keep the text before them.
+    parts = re.split(
+        r'\n\s*(?:Regards|Best regards|Sincerely|Conclusion|Thanks|Thank you)[\s,:-]?.*$',
+        text,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    return parts[0].strip()
+
+
 def _build_prompt(user_id: str, conversation_id: str) -> str:
     """
     Build a deterministic prompt for the LLM based on recent conversation history.
@@ -299,8 +315,11 @@ def chat_with_llm(req: SendMessageRequest, request: Request):
         # Generic failure (model call / infra) -> 500
         raise HTTPException(status_code=500, detail="LLM generation failed.")
 
+    # Clean the raw model reply to strip common sign-offs
+    clean_reply = strip_signature(reply_text).strip()
+
     # Persist assistant reply and return it
-    assistant_message = _store_message(user_id, conversation_id, "assistant", reply_text)
+    assistant_message = _store_message(user_id, conversation_id, "assistant", clean_reply)
     return SendMessageResponse(message=assistant_message, conversationId=conversation_id)
 
 
@@ -383,6 +402,17 @@ class AdminSettings(BaseModel):
     rateLimit: int
 
 
+# In-memory persisted admin settings for the lifetime of the process (demo)
+admin_settings_store = AdminSettings(
+    model="gpt-4o-mini",
+    systemPrompt="You are an internal assistant. Answer concisely and follow safety policies.",
+    temperature=0.2,
+    maxTokens=1024,
+    retrievalDepth=5,
+    rateLimit=60,
+)
+
+
 class TestRequest(BaseModel):
     """Request shape used by admin test endpoint."""
     prompt: str
@@ -397,21 +427,16 @@ class TestResponse(BaseModel):
 
 @app.get("/api/admin/settings", response_model=AdminSettings)
 def get_admin_settings():
-    """Return default admin settings (demo values)."""
-    return AdminSettings(
-        model="gpt-4o-mini",
-        systemPrompt="You are an internal assistant. Answer concisely and follow safety policies.",
-        temperature=0.2,
-        maxTokens=1024,
-        retrievalDepth=5,
-        rateLimit=60,
-    )
+    """Return current admin settings (persisted for this process)."""
+    return admin_settings_store
 
 
 @app.post("/api/admin/settings", response_model=AdminSettings)
 def update_admin_settings(settings: AdminSettings):
-    """Accept and echo admin settings — in a real app this would persist settings."""
-    return settings
+    """Persist and echo admin settings (demo-only persistence in-memory)."""
+    global admin_settings_store
+    admin_settings_store = settings
+    return admin_settings_store
 
 
 @app.get("/api/admin/test")
@@ -439,4 +464,3 @@ if __name__ == "__main__":
     import uvicorn
     # Run the app for local development. Use `python -m uvicorn backend.main:app --reload` in production/dev flow.
     uvicorn.run(app, host="0.0.0.0", port=8000)
-```
