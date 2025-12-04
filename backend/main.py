@@ -220,6 +220,28 @@ def get_conversation(conversation_id: str, request: Request):
     )
 
 
+# --- Admin Endpoints ---
+
+@app.get("/admin/stats")
+def get_admin_stats():
+    # Placeholder until real stats logic is wired in
+    return {
+        "totalUsers": 1,
+        "totalConversations": 0,
+        "totalMessages": 0,
+        "activeUsers": 0,
+    }
+
+@app.get("/admin/users")
+def get_admin_users():
+    return {"users": []}
+
+@app.get("/admin/settings")
+def get_admin_settings():
+    return {"settings": {}}
+
+
+
 @app.post("/api/chat/message", response_model=SendMessageResponse)
 def chat_with_llm(req: SendMessageRequest, request: Request):
     user_id = _get_user_id(request)
