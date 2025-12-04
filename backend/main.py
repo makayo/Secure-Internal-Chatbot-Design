@@ -299,28 +299,31 @@ def chat_with_llm(req: SendMessageRequest, request: Request):
     # Note: generate_text is expected to be synchronous and return a short string reply.
     # This implementation wraps errors into HTTPExceptions for clarity to the frontend.
     try:
-        reply_text = generate_text(
-            prompt=prompt,
-            max_new_tokens=80,
-            temperature=0.2,
-            top_p=0.8,
-            do_sample=False,
-            wrap_prompt=False,
-            strip_after="Answer:",
-        )
-    except ValueError as e:
-        # Validation errors from the LLM helper (e.g., invalid parameters)
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
-        # Generic failure (model call / infra) -> 500
-        raise HTTPException(status_code=500, detail="LLM generation failed.")
+    reply_text = generate_text(
+        prompt=prompt,
+        max_new_tokens=80,
+        temperature=0.2,
+        top_p=0.8,
+        do_sample=False,
+        wrap_prompt=False,
+        strip_after="Answer:",
+    )
+except ValueError as e:
+    # Validation errors from the LLM helper (e.g., invalid parameters)
+    raise HTTPException(status_code=400, detail=str(e))
+except Exception:
+    # Generic failure (model call / infra) -> 500
+    raise HTTPException(status_code=500, detail="LLM generation failed.")
 
-    # Clean the raw model reply to strip common sign-offs
-    clean_reply = strip_signature(reply_text).strip()
+# Guard against empty replies
+if not reply_text:
+    raise HTTPException(status_code=500, detail="Empty LLM reply.")
 
-    # Persist assistant reply and return it
-    assistant_message = _store_message(user_id, conversation_id, "assistant", clean_reply)
-    return SendMessageResponse(message=assistant_message, conversationId=conversation_id)
+# Clean the raw model reply to strip common sign‑offs
+clean_reply = strip_signature(reply_text).strip()
+
+assistant_message = _store_message(user_id, conversation_id, "assistant", clean_reply)
+return SendMessageResponse(message=assistant_message, conversationId=conversation_id)
 
 
 @app.delete("/api/chat/conversations/{conversation_id}")
@@ -352,7 +355,6 @@ def clear_conversation_messages(conversation_id: str, request: Request):
 
 @app.get("/api/admin/stats")
 def get_admin_stats(request: Request):
-    """Return simple statistics about stored conversations/messages (per-user demo)."""
     user_id = _get_user_id(request)
     user_meta = _get_user_metadata_store(user_id)
     user_msgs = _get_user_message_store(user_id)
@@ -360,11 +362,12 @@ def get_admin_stats(request: Request):
     total_messages = sum(len(user_msgs.get(cid, [])) for cid in user_msgs)
     active_users = 1 if total_conversations > 0 else 0
     return {
-        "totalUsers": len(conversation_metadata),
+        "totalUsers": 1,  # or len(global_metadata_store) if you track all users
         "totalConversations": total_conversations,
         "totalMessages": total_messages,
         "activeUsers": active_users,
     }
+
 
 
 @app.get("/api/admin/users")
