@@ -161,14 +161,14 @@ def require_auth(authorization: Optional[str] = Header(None)) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         # Allow mock bypass when enabled (dev/test only)
         if MOCK_AUTH_ENABLED:
-            return "user-2"  # admin user
+            return "test-user"
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
 
     token = authorization.replace("Bearer ", "")
 
     # Mock token shortcut
-    if MOCK_AUTH_ENABLED and token == "mock-admin-token":
-        return "user-2"
+    if MOCK_AUTH_ENABLED and token == "mock-test-token":
+        return "test-user"
 
     user_id = validate_session(token)
 
@@ -602,28 +602,14 @@ system_settings = {
     "rateLimit": 60
 }
 
-# Mock users database
+# Mock users database - Universal test user with admin role
 users_db = [
     {
-        "id": "user-1",
-        "name": "Super Admin",
-        "email": "superadmin@example.com",
-        "role": "super-admin",
-        "createdAt": "2024-01-01T00:00:00Z"
-    },
-    {
-        "id": "user-2",
-        "name": "Admin User",
-        "email": "admin@example.com",
-        "role": "admin",
-        "createdAt": "2024-01-01T00:00:00Z"
-    },
-    {
-        "id": "user-3",
+        "id": "test-user",
         "name": "Test User",
         "email": "test@example.com",
-        "role": "user",
-        "createdAt": "2024-01-15T00:00:00Z"
+        "role": "admin",
+        "createdAt": "2024-01-01T00:00:00Z"
     }
 ]
 

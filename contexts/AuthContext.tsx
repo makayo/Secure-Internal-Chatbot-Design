@@ -29,14 +29,14 @@ const USE_MOCK_AUTH =
   process.env.NODE_ENV === "development";
 
 const MOCK_USER: User = {
-  id: "test-user-123",
+  id: "test-user",
   email: "test@example.com",
   name: "Test User",
-  role: "admin", // Set to 'admin' for testing admin features
-  createdAt: new Date().toISOString(),
+  role: "admin",
+  createdAt: "2024-01-01T00:00:00Z",
 };
 
-const MOCK_TOKEN = "mock-admin-token";
+const MOCK_TOKEN = "mock-test-token";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
