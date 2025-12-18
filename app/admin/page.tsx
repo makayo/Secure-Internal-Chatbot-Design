@@ -216,59 +216,69 @@ function AdminPageContent() {
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            {activeTab === "stats" && stats && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-                  Statistics
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-                    <div className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-2">
-                      Total Users
+            {activeTab === "stats" &&
+              (stats ? (
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                    Statistics
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-2">
+                        Total Users
+                      </div>
+                      <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                        {stats.totalUsers}
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                      {stats.totalUsers}
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-lg">
+                      <div className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2">
+                        Total Conversations
+                      </div>
+                      <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">
+                        {stats.totalConversations}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-lg">
-                    <div className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2">
-                      Total Conversations
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
+                      <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-2">
+                        Total Messages
+                      </div>
+                      <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                        {stats.totalMessages}
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">
-                      {stats.totalConversations}
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-lg">
-                    <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-2">
-                      Total Messages
-                    </div>
-                    <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
-                      {stats.totalMessages}
-                    </div>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
-                    <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
-                      Active Users
-                    </div>
-                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                      {stats.activeUsers}
+                    <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
+                        Active Users
+                      </div>
+                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                        {stats.activeUsers}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  No statistics data available
+                </div>
+              ))}
 
             {activeTab === "users" && (
               <UserManagement initialUsers={users} onUpdate={loadData} />
             )}
 
-            {activeTab === "settings" && settings && (
-              <SystemSettingsForm
-                settings={settings}
-                availableModels={modelOptions}
-                onUpdate={handleUpdateSettings}
-              />
-            )}
+            {activeTab === "settings" &&
+              (settings ? (
+                <SystemSettingsForm
+                  settings={settings}
+                  availableModels={modelOptions}
+                  onUpdate={handleUpdateSettings}
+                />
+              ) : (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  No settings data available
+                </div>
+              ))}
 
             {activeTab === "api-keys" && (
               <ApiKeyManagement apiKeys={apiKeys} onKeysUpdated={loadData} />
@@ -345,13 +355,9 @@ function SystemSettingsForm({
               }
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              {Array.from(
-                new Set([
-                  ...(availableModels.length
-                    ? availableModels
-                    : DEFAULT_MODELS),
-                  formData.model,
-                ])
+              {(availableModels && availableModels.length > 0
+                ? Array.from(new Set([...availableModels, formData.model]))
+                : Array.from(new Set([...DEFAULT_MODELS, formData.model]))
               ).map((model) => (
                 <option key={model} value={model}>
                   {model}
